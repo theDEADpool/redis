@@ -1346,7 +1346,7 @@ void syncWithMaster(aeEventLoop *el, int fd, void *privdata, int mask) {
      * replication process where we have long timeouts in the order of
      * seconds (in the meantime the slave would block). */
     // 如果状态为 CONNECTING ，那么在进行初次同步之前，
-    // 向主服务器发送一个非阻塞的 PONG 
+    // 向主服务器发送一个非阻塞的 PING 
     // 因为接下来的 RDB 文件发送非常耗时，所以我们想确认主服务器真的能访问
     if (server.repl_state == REDIS_REPL_CONNECTING) {
         redisLog(REDIS_NOTICE,"Non blocking connect for SYNC fired the event.");
@@ -1373,7 +1373,7 @@ void syncWithMaster(aeEventLoop *el, int fd, void *privdata, int mask) {
         /* Delete the readable event, we no longer need it now that there is
          * the PING reply to read. */
         // 手动同步接收 PONG ，暂时取消监听读事件
-        aeDeleteFileEvent(server.el,fd,AE_READABLE);
+        aeDeleteFileEvent(server.el, fd, AE_READABLE);
 
         /* Read the reply with explicit timeout. */
         // 尝试在指定时间限制内读取 PONG
@@ -1486,7 +1486,7 @@ void syncWithMaster(aeEventLoop *el, int fd, void *privdata, int mask) {
 
     /* Setup the non blocking download of the bulk file. */
     // 设置一个读事件处理器，来读取主服务器的 RDB 文件
-    if (aeCreateFileEvent(server.el,fd, AE_READABLE,readSyncBulkPayload,NULL)
+    if (aeCreateFileEvent(server.el,fd, AE_READABLE, readSyncBulkPayload, NULL)
             == AE_ERR)
     {
         redisLog(REDIS_WARNING,
@@ -1701,7 +1701,7 @@ void slaveofCommand(redisClient *c) {
 /* Send a REPLCONF ACK command to the master to inform it about the current
  * processed offset. If we are not connected with a master, the command has
  * no effects. */
-// 向主服务器发送 REPLCONF AKC ，告知当前处理的偏移量
+// 向主服务器发送 REPLCONF ACK ，告知当前处理的偏移量
 // 如果未连接上主服务器，那么这个函数没有实际效果
 void replicationSendAck(void) {
     redisClient *c = server.master;
@@ -2258,7 +2258,7 @@ void replicationCron(void) {
 
         /* First, send PING */
         // 向所有已连接 slave （状态为 ONLINE）发送 PING
-        ping_argv[0] = createStringObject("PING",4);
+        ping_argv[0] = createStringObject("PING", 4);
         replicationFeedSlaves(server.slaves, server.slaveseldb, ping_argv, 1);
         decrRefCount(ping_argv[0]);
 
@@ -2299,6 +2299,7 @@ void replicationCron(void) {
             redisClient *slave = ln->value;
 
             // 略过未 ONLINE 的从服务器
+            // 主从之间完成过全量同步或增量同步之后才会设置这个状态
             if (slave->replstate != REDIS_REPL_ONLINE) continue;
 
             // 不检查旧版的从服务器
